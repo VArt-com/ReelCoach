@@ -23,9 +23,38 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: 'not_approved' }, { status: 403 });
   }
 
-  const body = await request.json();
+  let body: { tool?: unknown; input?: unknown };
+  try {
+    body = await request.json();
+  } catch {
+    return NextResponse.json({ error: 'invalid_json' }, { status: 400 });
+  }
   const tool = body.tool as ToolId;
-  const input = body.input as Record<string, string>;
+
+  // Validate and bound the input: plain object, string values only, capped
+  // sizes (protects against abuse and runaway AI costs).
+  const MAX_FIELDS = 12;
+  const MAX_FIELD_LENGTH = 3000;
+  const MAX_TOTAL_LENGTH = 8000;
+  if (!body.input || typeof body.input !== 'object' || Array.isArray(body.input)) {
+    return NextResponse.json({ error: 'invalid_input' }, { status: 400 });
+  }
+  const entries = Object.entries(body.input as Record<string, unknown>);
+  if (entries.length > MAX_FIELDS) {
+    return NextResponse.json({ error: 'invalid_input' }, { status: 400 });
+  }
+  const input: Record<string, string> = {};
+  let total = 0;
+  for (const [key, value] of entries) {
+    if (typeof value !== 'string' || value.length > MAX_FIELD_LENGTH || key.length > 60) {
+      return NextResponse.json({ error: 'invalid_input' }, { status: 400 });
+    }
+    total += value.length;
+    input[key] = value;
+  }
+  if (total > MAX_TOTAL_LENGTH) {
+    return NextResponse.json({ error: 'input_too_long' }, { status: 413 });
+  }
 
   const validTools: ToolId[] = ['caption', 'hook', 'client_win', 'bio_audit', 'weekly_plan'];
   if (!validTools.includes(tool)) {

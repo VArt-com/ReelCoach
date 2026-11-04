@@ -65,6 +65,11 @@ export default function RegisterPage() {
         <button type="submit" disabled={loading} className="btn-primary w-full">
           {loading ? 'Создаю...' : 'Создать аккаунт'}
         </button>
+        <p className="text-xs text-white/50 text-center">
+          Регистрируясь, вы соглашаетесь с{' '}
+          <Link href="/terms" target="_blank" className="underline">Условиями использования</Link> и{' '}
+          <Link href="/privacy" target="_blank" className="underline">Политикой конфиденциальности</Link>.
+        </p>
       </form>
       <p className="text-white/50 text-sm text-center mt-6">
         Уже есть аккаунт? <Link href="/login" className="text-orange-400 hover:underline">Войти</Link>
